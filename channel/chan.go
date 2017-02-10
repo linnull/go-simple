@@ -13,7 +13,8 @@ func main() {
 	go productor("two", bufchan)
 	go consumer("one", bufchan)
 
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * 10)
+	close(bufchan)
 }
 
 func consumer(cname string, channel chan int) {
