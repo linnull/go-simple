@@ -32,7 +32,7 @@ func main() {
 	}
 
 	for _, item := range data.Itmes {
-		go writeFile(item)
+		writeFile(item)
 	}
 
 }
