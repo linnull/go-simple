@@ -8,56 +8,41 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/PuerkitoBio/goquery"
+	"github.com/linnull/goutil"
 )
-
-var URL = "http://www.163.com"
 
 var wg sync.WaitGroup
 
 func main() {
-	links, err := getLinks(URL)
-	if err != nil {
-		panic(err)
+	URLs, _ := goutil.GetStringsFromJson("images.json")
+
+	for i, url := range URLs {
+		dirName := fmt.Sprintf("%d", i)
+		os.Mkdir(dirName, 0777)
+		links, err := goutil.GetImagesLinks(url)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		for _, link := range links {
+			wg.Add(1)
+			go downloadImage(link, dirName)
+		}
 	}
 
-	os.Mkdir("data", 0777)
-
-	for _, link := range links {
-		wg.Add(1)
-		go downloadImage(link)
-	}
 	wg.Wait()
 }
 
-func getLinks(url string) ([]string, error) {
-	links := []string{}
-	doc, err := goquery.NewDocument(url)
-	if err != nil {
-		return nil, err
-	}
-	sel := doc.Find("img")
-
-	for _, n := range sel.Nodes {
-
-		for _, i := range n.Attr {
-			if i.Key == "src" {
-				links = append(links, i.Val)
-			}
-		}
-	}
-	return links, err
-}
-
-func downloadImage(url string) error {
+func downloadImage(url string, dirName string) error {
 	defer wg.Done()
+
 	name := getName(url)
 	resp, err := http.Get(url)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-	f, err := os.Create(fmt.Sprintf("data/%s", name))
+	f, err := os.Create(dirName + "/" + name)
 	if err != nil {
 		return err
 	}
