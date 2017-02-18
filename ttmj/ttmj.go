@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sync"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -16,6 +17,8 @@ type Data struct {
 }
 
 var urls = []string{}
+
+var wg sync.WaitGroup
 
 func main() {
 
@@ -32,8 +35,11 @@ func main() {
 	}
 
 	for _, item := range data.Itmes {
-		writeFile(item)
+		wg.Add(1)
+		go writeFile(item)
 	}
+
+	wg.Wait()
 
 }
 
@@ -52,6 +58,9 @@ func gethtml(url string) {
 }
 
 func writeFile(item string) {
+
+	defer wg.Done()
+
 	gethtml(fmt.Sprint(per + item + ".html"))
 	file, err := os.OpenFile(fmt.Sprintf("%s.txt", item), os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
@@ -64,4 +73,5 @@ func writeFile(item string) {
 		file.Write([]byte(str + "\r\n"))
 	}
 	urls = []string{}
+
 }
