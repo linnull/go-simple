@@ -1,13 +1,14 @@
 package main
 
 import (
-	"encoding/json"
+	// "encoding/json"
 	"fmt"
-	"io/ioutil"
+	// "io/ioutil"
 	"os"
 	"sync"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/linnull/goutil"
 )
 
 const per = "http://www.ttmeiju.com/meiju/"
@@ -19,22 +20,16 @@ type Data struct {
 var urls = []string{}
 
 var wg sync.WaitGroup
+var mux sync.Mutex
 
 func main() {
 
-	b, err := ioutil.ReadFile("ttmj.json")
+	items, err := goutil.GetStringsFromJson("ttmj.json")
 	if err != nil {
-		fmt.Print(err)
-		os.Exit(1)
-	}
-	data := &Data{[]string{}}
-	err = json.Unmarshal(b, data)
-	if err != nil {
-		fmt.Print(err)
-		os.Exit(1)
+		panic(err)
 	}
 
-	for _, item := range data.Itmes {
+	for _, item := range items {
 		wg.Add(1)
 		go writeFile(item)
 	}
@@ -60,7 +55,7 @@ func gethtml(url string) {
 func writeFile(item string) {
 
 	defer wg.Done()
-
+	mux.Lock()
 	gethtml(fmt.Sprint(per + item + ".html"))
 	file, err := os.OpenFile(fmt.Sprintf("%s.txt", item), os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
@@ -73,5 +68,5 @@ func writeFile(item string) {
 		file.Write([]byte(str + "\r\n"))
 	}
 	urls = []string{}
-
+	mux.Unlock()
 }
